@@ -105,6 +105,14 @@ body {
   padding: 8px 12px 20px;
 }
 
+.sidebar__toggle,
+.sidebar__link,
+.header__menu-btn {
+  font-family: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
 .sidebar__link {
   display: flex;
   align-items: center;
