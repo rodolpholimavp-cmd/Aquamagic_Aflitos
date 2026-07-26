@@ -312,5 +312,6 @@
 
   window.LavanderiaExcel = {
     loadExcelFile,
+    parseWorkbook,
   };
 })();

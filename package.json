@@ -1,0 +1,11 @@
+{
+  "name": "lavanderia-dashboard",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "export-data": "node scripts/export-from-excel.mjs"
+  },
+  "dependencies": {
+    "xlsx": "^0.18.5"
+  }
+}
