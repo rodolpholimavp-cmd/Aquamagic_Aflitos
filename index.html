@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aquamagic Aflitos — Dashboard</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="header__content">
+        <h1>Aquamagic Aflitos</h1>
+        <p class="subtitle">Acompanhe faturamento, ciclos e desempenho das máquinas</p>
+      </div>
+      <img
+        class="header__logo"
+        src="assets/logo-aquamagic.png"
+        alt="Aquamagic"
+        width="88"
+        height="88"
+      >
+    </header>
+
+    <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" hidden>
+
+    <div class="filter-row">
+      <section class="filter-bar" id="filterBar">
+        <div class="filter-bar__content">
+          <span class="filter-bar__label">Período</span>
+          <p class="filter-bar__summary" id="filterSummary"></p>
+          <p class="data-source" id="dataSourceLabel">Nenhuma planilha carregada</p>
+        </div>
+        <button type="button" class="btn btn--ghost btn--filter" id="toggleFilterBtn" aria-expanded="false">
+          Alterar período
+        </button>
+      </section>
+      <div class="filter-row__actions" id="ownerActions">
+        <button type="button" class="btn btn--ghost btn--subtle" id="publishDataBtn">Publicar na web</button>
+        <button type="button" class="btn btn--ghost btn--subtle" id="loadExcelBtn">Atualizar Dados</button>
+      </div>
+    </div>
+
+    <section class="filter-drawer is-hidden" id="filterDrawer" aria-hidden="true">
+      <div class="filter-drawer__inner">
+        <div class="filter-drawer__header">
+          <h2>Filtros de período</h2>
+          <p>Clique nas listas para marcar ou desmarcar. Use <strong>Marcar todos</strong> ou <strong>Desmarcar todos</strong> quando quiser. Deixe <strong>Dias</strong> vazio para incluir todos.</p>
+        </div>
+
+        <div class="filter-grid">
+          <fieldset class="filter-fieldset">
+            <legend>Período principal — Anos</legend>
+            <div class="filter-fieldset__actions">
+              <button type="button" class="btn btn--tiny" data-select-all="primaryYears">Marcar todos</button>
+              <button type="button" class="btn btn--tiny" data-deselect-all="primaryYears">Desmarcar todos</button>
+            </div>
+            <select id="primaryYears" class="select select--list" multiple size="2"></select>
+          </fieldset>
+
+          <fieldset class="filter-fieldset">
+            <legend>Período principal — Meses</legend>
+            <div class="filter-fieldset__actions">
+              <button type="button" class="btn btn--tiny" data-select-all="primaryMonths">Marcar todos</button>
+              <button type="button" class="btn btn--tiny" data-deselect-all="primaryMonths">Desmarcar todos</button>
+            </div>
+            <select id="primaryMonths" class="select select--list" multiple size="4"></select>
+          </fieldset>
+
+          <fieldset class="filter-fieldset">
+            <legend>Período principal — Dias <span class="legend-hint">(opcional)</span></legend>
+            <div class="filter-fieldset__actions">
+              <button type="button" class="btn btn--tiny" data-select-all="primaryDays">Marcar todos</button>
+              <button type="button" class="btn btn--tiny" data-deselect-all="primaryDays">Desmarcar todos</button>
+            </div>
+            <select id="primaryDays" class="select select--list" multiple size="4"></select>
+          </fieldset>
+        </div>
+
+        <label class="compare-toggle filter-drawer__compare">
+          <input type="checkbox" id="compareFilterToggle">
+          Comparar com outro período
+        </label>
+
+        <div class="filter-grid filter-grid--compare is-hidden" id="compareFilterBlock">
+          <fieldset class="filter-fieldset">
+            <legend>Comparação — Anos</legend>
+            <div class="filter-fieldset__actions">
+              <button type="button" class="btn btn--tiny" data-select-all="compareYears">Marcar todos</button>
+              <button type="button" class="btn btn--tiny" data-deselect-all="compareYears">Desmarcar todos</button>
+            </div>
+            <select id="compareYears" class="select select--list" multiple size="2"></select>
+          </fieldset>
+
+          <fieldset class="filter-fieldset">
+            <legend>Comparação — Meses</legend>
+            <div class="filter-fieldset__actions">
+              <button type="button" class="btn btn--tiny" data-select-all="compareMonths">Marcar todos</button>
+              <button type="button" class="btn btn--tiny" data-deselect-all="compareMonths">Desmarcar todos</button>
+            </div>
+            <select id="compareMonths" class="select select--list" multiple size="4"></select>
+          </fieldset>
+
+          <fieldset class="filter-fieldset">
+            <legend>Comparação — Dias <span class="legend-hint">(opcional)</span></legend>
+            <div class="filter-fieldset__actions">
+              <button type="button" class="btn btn--tiny" data-select-all="compareDays">Marcar todos</button>
+              <button type="button" class="btn btn--tiny" data-deselect-all="compareDays">Desmarcar todos</button>
+            </div>
+            <select id="compareDays" class="select select--list" multiple size="4"></select>
+          </fieldset>
+        </div>
+
+        <div class="filter-drawer__footer">
+          <label class="filter-inline">
+            <span>Agrupar gráfico por</span>
+            <select id="groupBySelect" class="select select--compact">
+              <option value="year">Ano</option>
+              <option value="month" selected>Mês</option>
+              <option value="day">Dia</option>
+            </select>
+          </label>
+
+          <div class="filter-drawer__actions">
+            <button type="button" class="btn btn--primary" id="applyFilters">Aplicar</button>
+            <button type="button" class="btn btn--ghost" id="cancelFilters">Cancelar</button>
+            <button type="button" class="btn btn--ghost" id="resetFilters">Restaurar padrão</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="kpi-grid">
+      <article class="kpi-card">
+        <span class="kpi-label">Faturamento Total</span>
+        <strong class="kpi-value" id="kpiRevenue">R$ 0,00</strong>
+        <span class="kpi-hint" id="kpiRevenueHint">no período selecionado</span>
+      </article>
+      <article class="kpi-card">
+        <span class="kpi-label">Total de Ciclos</span>
+        <strong class="kpi-value" id="kpiCycles">0</strong>
+        <span class="kpi-hint">lavagens e secagens</span>
+      </article>
+      <article class="kpi-card">
+        <span class="kpi-label">Ciclos por Dia</span>
+        <strong class="kpi-value" id="kpiCyclesPerDay">0</strong>
+        <span class="kpi-hint">média diária no período</span>
+      </article>
+    </section>
+
+    <section class="chart-section chart-section--wide">
+      <div class="chart-header">
+        <div>
+          <h2>Faturamento por Período</h2>
+          <p class="chart-desc" id="chartDesc">Comparação entre os períodos selecionados nos filtros acima.</p>
+        </div>
+      </div>
+
+      <div class="chart-wrap chart-wrap--tall">
+        <canvas id="revenueDrillChart"></canvas>
+      </div>
+    </section>
+
+    <section class="charts-grid">
+      <article class="chart-section">
+        <div class="chart-header">
+          <h2>Faturamento por Forma de Pagamento</h2>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="paymentChart"></canvas>
+        </div>
+      </article>
+
+      <article class="chart-section">
+        <div class="chart-header">
+          <h2>Distribuição por Tipo de Ciclo</h2>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="cycleChart"></canvas>
+        </div>
+      </article>
+
+      <article class="chart-section chart-section--wide">
+        <div class="chart-header">
+          <h2>Faturamento por Turno</h2>
+          <p class="chart-desc">Manhã (05h–12h), tarde (12h01–18h), noite (18h01–23h59) e madrugada (00h–04h59).</p>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="shiftChart"></canvas>
+        </div>
+      </article>
+
+      <article class="chart-section chart-section--wide">
+        <div class="chart-header">
+          <h2>Ranking das Máquinas Mais Usadas</h2>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="machineChart"></canvas>
+        </div>
+      </article>
+    </section>
+
+    <section class="chart-section chart-section--wide user-ranking-section">
+      <div class="chart-header chart-header--table">
+        <div>
+          <h2>Ranking por Usuário</h2>
+          <p class="chart-desc">Todos os usuários no período — exibe 5 por vez, role para ver os demais.</p>
+        </div>
+        <div class="table-sort" role="group" aria-label="Ordenar ranking de usuários">
+          <button type="button" class="btn btn--tiny table-sort__btn is-active" id="sortUsersByRevenue" data-sort="revenue">
+            Por faturamento
+          </button>
+          <button type="button" class="btn btn--tiny table-sort__btn" id="sortUsersByName" data-sort="name">
+            Por nome A–Z
+          </button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table" id="userRankingTable">
+          <thead>
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">Usuário</th>
+              <th scope="col" class="data-table__number">Faturamento</th>
+            </tr>
+          </thead>
+          <tbody id="userRankingBody">
+            <tr>
+              <td colspan="3" class="data-table__empty">Carregue a planilha para ver o ranking.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer class="footer" id="appFooter">
+      Carregue sua planilha Excel de vendas para atualizar o dashboard.
+    </footer>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/cycle-type.js"></script>
+  <script src="js/machine-normalizer.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/shifts.js"></script>
+  <script src="js/remote-data.js"></script>
+  <script src="js/excel-loader.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
