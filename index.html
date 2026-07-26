@@ -10,23 +10,81 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
-  <div class="app">
-    <header class="header">
-      <div class="header__content">
-        <h1>Aquamagic Aflitos</h1>
-        <p class="subtitle">Acompanhe faturamento, ciclos e desempenho das máquinas</p>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar" aria-label="Menu principal">
+      <div class="sidebar__top">
+        <button
+          type="button"
+          class="sidebar__toggle"
+          id="sidebarToggle"
+          aria-label="Recolher menu"
+          aria-expanded="true"
+        >
+          <svg class="sidebar__toggle-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
       </div>
-      <img
-        class="header__logo"
-        src="assets/logo-aquamagic.png"
-        alt="Aquamagic"
-        width="88"
-        height="88"
-      >
-    </header>
 
-    <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" hidden>
+      <nav class="sidebar__nav">
+        <button
+          type="button"
+          class="sidebar__link is-active"
+          id="navOperacional"
+          data-view="operacional"
+          aria-current="page"
+        >
+          <svg class="sidebar__icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 19V5M4 19h16M8 19V9M12 19V13M16 19V7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <span class="sidebar__label">Operacional</span>
+        </button>
 
+        <button
+          type="button"
+          class="sidebar__link"
+          id="navFinanceiro"
+          data-view="financeiro"
+        >
+          <svg class="sidebar__icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="sidebar__label">Financeiro</span>
+        </button>
+      </nav>
+    </aside>
+
+    <div class="sidebar-backdrop is-hidden" id="sidebarBackdrop" aria-hidden="true"></div>
+
+    <main class="app-main">
+      <div class="app">
+        <header class="header">
+          <button
+            type="button"
+            class="header__menu-btn"
+            id="mobileMenuBtn"
+            aria-label="Abrir menu"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+          <div class="header__content">
+            <h1>Aquamagic Aflitos</h1>
+            <p class="subtitle" id="pageSubtitle">Acompanhe faturamento, ciclos e desempenho das máquinas</p>
+          </div>
+          <img
+            class="header__logo"
+            src="assets/logo-aquamagic.png"
+            alt="Aquamagic"
+            width="88"
+            height="88"
+          >
+        </header>
+
+        <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" hidden>
+
+        <div class="view-panel" id="viewOperacional">
     <div class="filter-row">
       <section class="filter-bar" id="filterBar">
         <div class="filter-bar__content">
@@ -249,6 +307,26 @@
     <footer class="footer" id="appFooter">
       Carregue sua planilha Excel de vendas para atualizar o dashboard.
     </footer>
+        </div>
+
+        <div class="view-panel is-hidden" id="viewFinanceiro">
+          <section class="section-intro">
+            <h2>Financeiro</h2>
+            <p>Movimentações financeiras da lavanderia. Em breve você verá aqui gráficos e indicadores desta área.</p>
+          </section>
+
+          <section class="financeiro-placeholder">
+            <div class="financeiro-placeholder__card">
+              <svg class="financeiro-placeholder__icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <h3>Área em construção</h3>
+              <p>Na próxima etapa vamos adicionar os gráficos e informações financeiras.</p>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
   </div>
 
   <script src="js/config.js"></script>

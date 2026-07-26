@@ -69,6 +69,11 @@
     };
   }
 
+  const VIEW_SUBTITLES = {
+    operacional: "Acompanhe faturamento, ciclos e desempenho das máquinas",
+    financeiro: "Movimentações financeiras da lavanderia",
+  };
+
   const state = {
     primary: defaultFilter(),
     compare: defaultFilter(),
@@ -76,8 +81,109 @@
     groupBy: "month",
     filterOpen: false,
     userRankingSort: "revenue",
+    activeView: "operacional",
+    sidebarCollapsed: false,
+    sidebarMobileOpen: false,
     charts: {},
   };
+
+  function isMobileLayout() {
+    return window.matchMedia("(max-width: 900px)").matches;
+  }
+
+  function setSidebarMobileOpen(open) {
+    state.sidebarMobileOpen = open;
+    const sidebar = document.getElementById("sidebar");
+    const backdrop = document.getElementById("sidebarBackdrop");
+    sidebar.classList.toggle("sidebar--mobile-open", open);
+    backdrop.classList.toggle("is-hidden", !open);
+    backdrop.setAttribute("aria-hidden", open ? "false" : "true");
+  }
+
+  function setSidebarCollapsed(collapsed) {
+    state.sidebarCollapsed = collapsed;
+    const sidebar = document.getElementById("sidebar");
+    const toggle = document.getElementById("sidebarToggle");
+    sidebar.classList.toggle("sidebar--collapsed", collapsed);
+    toggle.setAttribute("aria-label", collapsed ? "Expandir menu" : "Recolher menu");
+    toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    try {
+      localStorage.setItem("lavanderia-sidebar-collapsed", collapsed ? "1" : "0");
+    } catch (_error) {
+      /* ignore storage errors */
+    }
+  }
+
+  function resizeActiveCharts() {
+    Object.values(state.charts).forEach((chart) => {
+      if (chart && typeof chart.resize === "function") {
+        chart.resize();
+      }
+    });
+  }
+
+  function setActiveView(view) {
+    if (!VIEW_SUBTITLES[view]) return;
+
+    state.activeView = view;
+    document.getElementById("viewOperacional").classList.toggle("is-hidden", view !== "operacional");
+    document.getElementById("viewFinanceiro").classList.toggle("is-hidden", view !== "financeiro");
+
+    document.querySelectorAll(".sidebar__link[data-view]").forEach((button) => {
+      const isActive = button.dataset.view === view;
+      button.classList.toggle("is-active", isActive);
+      if (isActive) {
+        button.setAttribute("aria-current", "page");
+      } else {
+        button.removeAttribute("aria-current");
+      }
+    });
+
+    document.getElementById("pageSubtitle").textContent = VIEW_SUBTITLES[view];
+
+    if (view === "operacional") {
+      window.requestAnimationFrame(resizeActiveCharts);
+    }
+
+    if (isMobileLayout()) {
+      setSidebarMobileOpen(false);
+    }
+  }
+
+  function initSidebar() {
+    const savedCollapsed = localStorage.getItem("lavanderia-sidebar-collapsed") === "1";
+    if (!isMobileLayout() && savedCollapsed) {
+      setSidebarCollapsed(true);
+    }
+
+    document.getElementById("sidebarToggle").addEventListener("click", () => {
+      if (isMobileLayout()) {
+        setSidebarMobileOpen(!state.sidebarMobileOpen);
+        return;
+      }
+      setSidebarCollapsed(!state.sidebarCollapsed);
+    });
+
+    document.getElementById("mobileMenuBtn").addEventListener("click", () => {
+      setSidebarMobileOpen(true);
+    });
+
+    document.getElementById("sidebarBackdrop").addEventListener("click", () => {
+      setSidebarMobileOpen(false);
+    });
+
+    document.querySelectorAll(".sidebar__link[data-view]").forEach((button) => {
+      button.addEventListener("click", () => {
+        setActiveView(button.dataset.view);
+      });
+    });
+
+    window.addEventListener("resize", () => {
+      if (!isMobileLayout()) {
+        setSidebarMobileOpen(false);
+      }
+    });
+  }
 
   const chartColors = {
     primary: "#3b82f6",
@@ -1152,6 +1258,8 @@
 
   setFilterDrawerOpen(false);
   configureViewMode();
+  initSidebar();
+  setActiveView("operacional");
 
   async function bootstrapData() {
     if (window.LAVANDERIA_CONFIG && window.LAVANDERIA_CONFIG.readOnly) {
