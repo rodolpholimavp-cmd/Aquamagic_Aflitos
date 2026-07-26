@@ -23,6 +23,16 @@
     "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
   ];
 
+  const weekdayNames = [
+    "Domingo",
+    "Segunda",
+    "Terça",
+    "Quarta",
+    "Quinta",
+    "Sexta",
+    "Sábado",
+  ];
+
   const currency = new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
@@ -84,6 +94,10 @@
   function parseDate(value) {
     const [year, month, day] = value.split("-").map(Number);
     return new Date(year, month - 1, day);
+  }
+
+  function getWeekdayLabel(dateValue) {
+    return weekdayNames[parseDate(dateValue).getDay()];
   }
 
   function sumAmount(items) {
@@ -658,10 +672,8 @@
     window.LavanderiaRemote.downloadPublishedData();
     alert(
       "Arquivo dashboard-data.json baixado.\n\n" +
-        "Próximos passos:\n" +
-        "1. Copie o arquivo para a pasta data\\ do projeto (substitua o existente)\n" +
-        "2. Dê duplo clique em publicar.bat\n\n" +
-        "Seus sócios verão os dados em:\n" +
+        "Forma mais fácil: dê duplo clique em publicar.bat — ele lê a planilha do OneDrive e envia tudo ao GitHub automaticamente.\n\n" +
+        "Link dos sócios:\n" +
         "https://rodolpholimavp-cmd.github.io/Aquamagic_Aflitos/",
     );
   }
@@ -943,6 +955,60 @@
     state.charts.machine = new Chart(document.getElementById("machineChart"), config);
   }
 
+  function renderWeekdayChart() {
+    const filtered = filterTransactions(state.primary);
+    const counts = groupCount(filtered, (item) => getWeekdayLabel(item.date));
+    const ranking = [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([weekday, uses]) => ({ weekday, uses }));
+
+    const config = {
+      type: "bar",
+      data: {
+        labels: ranking.map((item) => item.weekday),
+        datasets: [
+          {
+            label: "Ciclos realizados",
+            data: ranking.map((item) => item.uses),
+            backgroundColor: getChartPalette(ranking.length),
+            borderColor: "#1e3a8a",
+            borderWidth: 1,
+            borderRadius: 6,
+          },
+        ],
+      },
+      options: {
+        indexAxis: "y",
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          datalabels: hiddenDatalabels,
+          tooltip: {
+            callbacks: {
+              label(context) {
+                return `${context.parsed.x} ciclos`;
+              },
+            },
+          },
+        },
+        scales: {
+          x: {
+            ticks: { color: chartColors.text, precision: 0 },
+            grid: { color: chartColors.grid },
+          },
+          y: {
+            ticks: { color: chartColors.text },
+            grid: { display: false },
+          },
+        },
+      },
+    };
+
+    if (state.charts.weekday) state.charts.weekday.destroy();
+    state.charts.weekday = new Chart(document.getElementById("weekdayChart"), config);
+  }
+
   function validateFilter(filter, label) {
     if (filter.years.length === 0) {
       alert(`Selecione pelo menos um ano em ${label}.`);
@@ -977,6 +1043,7 @@
     renderCycleChart();
     renderShiftChart();
     renderMachineChart();
+    renderWeekdayChart();
     renderUserRankingTable();
     setFilterDrawerOpen(false);
   }
