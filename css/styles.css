@@ -484,7 +484,21 @@ body {
   grid-template-columns: repeat(3, 1fr);
 }
 
+.filter-fieldset--wide {
+  margin-top: 4px;
+  margin-bottom: 14px;
+}
+
+.fin-supplier-filter .select--list-tall {
+  min-height: 148px;
+}
+
+.select--list-tall option {
+  padding: 6px 8px;
+}
+
 .chart-wrap--scroll {
+  height: 280px;
   max-height: 280px;
   overflow-y: auto;
   overflow-x: hidden;
@@ -492,6 +506,11 @@ body {
   border-radius: 10px;
   background: rgba(15, 23, 42, 0.35);
   padding: 8px 8px 0;
+}
+
+.chart-wrap__inner {
+  position: relative;
+  width: 100%;
 }
 
 .user-ranking-section .table-wrap,

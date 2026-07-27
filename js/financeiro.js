@@ -41,6 +41,7 @@
 
   const state = {
     primary: null,
+    suppliers: [],
     groupBy: "month",
     filterOpen: false,
     supplierSort: "value",
@@ -92,16 +93,42 @@
     return true;
   }
 
+  function deriveSuppliersFromData() {
+    const suppliers = new Set();
+    getMovements()
+      .filter((item) => item.amount < 0)
+      .forEach((item) => suppliers.add(item.recipient));
+    return [...suppliers].sort((a, b) => a.localeCompare(b, "pt-BR", { sensitivity: "base" }));
+  }
+
   function filterMovements(filter) {
     return getMovements().filter((item) => matchesFilter(item, filter));
   }
 
-  function describeDays(days) {
-    if (days.length === 0) return "todos os dias";
-    return `dias ${days.map((day) => String(day).padStart(2, "0")).join(", ")}`;
+  function applySupplierFilter(items) {
+    if (state.suppliers.length === 0) return items;
+    const selected = new Set(state.suppliers);
+    return items.filter((item) => item.amount < 0 && selected.has(item.recipient));
+  }
+
+  function getActiveMovements() {
+    return applySupplierFilter(filterMovements(state.primary));
+  }
+
+  function describeSupplierFilter(suppliers) {
+    if (suppliers.length === 0) return "todos os fornecedores";
+    if (suppliers.length === 1) return suppliers[0];
+    if (suppliers.length <= 2) return suppliers.join(", ");
+    return `${suppliers.length} fornecedores`;
   }
 
   function describeFilterText(filter) {
+    const period = describePeriodText(filter);
+    const suppliers = describeSupplierFilter(state.suppliers);
+    return `${period} · ${suppliers}`;
+  }
+
+  function describePeriodText(filter) {
     const years = filter.years.sort((a, b) => a - b).join(", ");
     const months =
       filter.months.length === 12
@@ -112,6 +139,11 @@
             .join(", ");
     const days = describeDays(filter.days);
     return `Anos ${years} · ${months} · ${days}`;
+  }
+
+  function describeDays(days) {
+    if (days.length === 0) return "todos os dias";
+    return `dias ${days.map((day) => String(day).padStart(2, "0")).join(", ")}`;
   }
 
   function formatMonthYear(month, year) {
@@ -216,17 +248,31 @@
     fill("finPrimaryYears", yearOptions);
     fill("finPrimaryMonths", monthOptions);
     fill("finPrimaryDays", dayOptions);
+
+    const supplierSelect = document.getElementById("finSuppliers");
+    if (supplierSelect) {
+      supplierSelect.innerHTML = "";
+      deriveSuppliersFromData().forEach((name) => {
+        const option = document.createElement("option");
+        option.value = name;
+        option.textContent = name;
+        supplierSelect.appendChild(option);
+      });
+    }
   }
 
   function refreshDataDerivedOptions() {
     availableYears = deriveYearsFromData();
     populateSelects();
+    const validSuppliers = new Set(deriveSuppliersFromData());
+    state.suppliers = state.suppliers.filter((name) => validSuppliers.has(name));
   }
 
   function syncSelectsFromState() {
     setSelectedValues(document.getElementById("finPrimaryYears"), state.primary.years);
     setSelectedValues(document.getElementById("finPrimaryMonths"), state.primary.months);
     setSelectedValues(document.getElementById("finPrimaryDays"), state.primary.days);
+    setSelectedValues(document.getElementById("finSuppliers"), state.suppliers);
     document.getElementById("finGroupBySelect").value = state.groupBy;
   }
 
@@ -237,6 +283,7 @@
         months: getSelectedValues(document.getElementById("finPrimaryMonths"), Number),
         days: getSelectedValues(document.getElementById("finPrimaryDays"), Number),
       },
+      suppliers: getSelectedValues(document.getElementById("finSuppliers"), String),
       groupBy: document.getElementById("finGroupBySelect").value,
     };
   }
@@ -285,7 +332,12 @@
   }
 
   function updateFilterSummary() {
-    document.getElementById("finFilterSummary").textContent = describeFilterText(state.primary);
+    const summary = document.getElementById("finFilterSummary");
+    if (!state.primary) {
+      summary.textContent = "Nenhum dado carregado";
+      return;
+    }
+    summary.textContent = describeFilterText(state.primary);
   }
 
   function updateDataSourceLabel(detail) {
@@ -342,8 +394,39 @@
     };
   }
 
+  function getAlignedYScales(credits, debits, balance) {
+    const padding = 1.1;
+    const barMax = Math.max(...credits, ...debits, 0) * padding || padding;
+    let y1Min = Math.min(...balance, 0);
+    let y1Max = Math.max(...balance, 0);
+
+    if (y1Min < 0) y1Min *= padding;
+    if (y1Max > 0) y1Max *= padding;
+
+    if (y1Min >= 0 && y1Max <= 0) {
+      y1Max = barMax;
+    }
+
+    if (y1Min >= 0) {
+      const sharedMax = Math.max(barMax, y1Max, 1);
+      return {
+        y: { min: 0, max: sharedMax },
+        y1: { min: 0, max: sharedMax },
+      };
+    }
+
+    const y1Ratio = y1Max / (-y1Min);
+    const yMin = -barMax / y1Ratio;
+
+    return {
+      y: { min: yMin, max: barMax },
+      y1: { min: y1Min, max: y1Max },
+    };
+  }
+
   function renderCashFlowChart(items) {
     const series = buildCashFlowSeries(items, state.groupBy);
+    const axisLimits = getAlignedYScales(series.credits, series.debits, series.balance);
     const config = {
       type: "bar",
       data: {
@@ -409,6 +492,8 @@
           },
           y: {
             position: "left",
+            min: axisLimits.y.min,
+            max: axisLimits.y.max,
             ticks: {
               color: chartColors.text,
               callback: (value) => currency.format(value),
@@ -417,6 +502,8 @@
           },
           y1: {
             position: "right",
+            min: axisLimits.y1.min,
+            max: axisLimits.y1.max,
             ticks: {
               color: chartColors.balance,
               callback: (value) => currency.format(value),
@@ -431,8 +518,11 @@
     charts.cashFlow = new Chart(document.getElementById("finCashFlowChart"), config);
 
     const groupLabels = { year: "ano", month: "mês", day: "dia" };
-    document.getElementById("finChartDesc").textContent =
-      `Entradas, saídas (valor absoluto) e saldo por ${groupLabels[state.groupBy]}.`;
+    let desc = `Entradas, saídas (valor absoluto) e saldo por ${groupLabels[state.groupBy]}. Zeros dos eixos alinhados.`;
+    if (state.suppliers.length > 0) {
+      desc += ` Filtrando pagamentos de: ${describeSupplierFilter(state.suppliers)}.`;
+    }
+    document.getElementById("finChartDesc").textContent = desc;
   }
 
   function renderExitTypeChart(items) {
@@ -446,10 +536,15 @@
       .sort((a, b) => b[1] - a[1])
       .map(([classification, value]) => ({ classification, value }));
 
-    const barHeight = 42;
+    const visibleBars = 5;
+    const barHeight = 48;
+    const viewportHeight = visibleBars * barHeight + 24;
+    const itemCount = Math.max(ranking.length, 1);
+    const contentHeight = Math.max(viewportHeight, itemCount * barHeight + 24);
+    const inner = document.getElementById("finExitTypeChartInner");
+    inner.style.height = `${contentHeight}px`;
+
     const canvas = document.getElementById("finExitTypeChart");
-    const wrap = canvas.closest(".chart-wrap--scroll");
-    wrap.style.height = `${Math.max(240, ranking.length * barHeight + 40)}px`;
 
     const config = {
       type: "bar",
@@ -589,7 +684,7 @@
       syncSelectsFromState();
     }
 
-    const filtered = filterMovements(state.primary);
+    const filtered = getActiveMovements();
     updateFilterSummary();
     updateKpis(filtered);
     renderCashFlowChart(filtered);
@@ -601,6 +696,7 @@
   function applyLoadedData(detail) {
     refreshDataDerivedOptions();
     state.primary = defaultFilter();
+    state.suppliers = [];
     state.groupBy = "month";
     syncSelectsFromState();
     updateDataSourceLabel(detail);
@@ -616,6 +712,7 @@
       const draft = readFiltersFromSelects();
       if (!validateFilter(draft.primary, "Período principal")) return;
       state.primary = draft.primary;
+      state.suppliers = draft.suppliers;
       state.groupBy = draft.groupBy;
       renderDashboard();
     });
@@ -626,6 +723,7 @@
 
     document.getElementById("finResetFilters").addEventListener("click", () => {
       state.primary = defaultFilter();
+      state.suppliers = [];
       state.groupBy = "month";
       syncSelectsFromState();
       renderDashboard();
@@ -637,12 +735,12 @@
 
     document.getElementById("finSortSuppliersByValue").addEventListener("click", () => {
       state.supplierSort = "value";
-      renderSupplierRankingTable(filterMovements(state.primary || defaultFilter()));
+      renderSupplierRankingTable(getActiveMovements());
     });
 
     document.getElementById("finSortSuppliersByName").addEventListener("click", () => {
       state.supplierSort = "name";
-      renderSupplierRankingTable(filterMovements(state.primary || defaultFilter()));
+      renderSupplierRankingTable(getActiveMovements());
     });
 
     document.querySelectorAll("[data-fin-select-all]").forEach((button) => {
@@ -660,8 +758,9 @@
 
   function init() {
     state.primary = defaultFilter();
+    state.suppliers = [];
     populateSelects();
-    ["finPrimaryYears", "finPrimaryMonths", "finPrimaryDays"].forEach((id) => {
+    ["finPrimaryYears", "finPrimaryMonths", "finPrimaryDays", "finSuppliers"].forEach((id) => {
       enableClickToggle(document.getElementById(id));
     });
     setFilterDrawerOpen(false);

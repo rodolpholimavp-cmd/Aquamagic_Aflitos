@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Aquamagic Aflitos — Dashboard</title>
-  <link rel="stylesheet" href="css/styles.css?v=20260727">
+  <link rel="stylesheet" href="css/styles.css?v=20260729">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -327,7 +327,7 @@
             <div class="filter-drawer__inner">
               <div class="filter-drawer__header">
                 <h2>Filtros de período — Financeiro</h2>
-                <p>Clique nas listas para marcar ou desmarcar. Use <strong>Marcar todos</strong> ou <strong>Desmarcar todos</strong>. Deixe <strong>Dias</strong> vazio para incluir todos.</p>
+                <p>Clique nas listas para marcar ou desmarcar. Use <strong>Marcar todos</strong> ou <strong>Desmarcar todos</strong>. Deixe <strong>Dias</strong> e <strong>Fornecedores</strong> vazios para incluir todos.</p>
               </div>
 
               <div class="filter-grid filter-grid--single">
@@ -358,6 +358,15 @@
                   <select id="finPrimaryDays" class="select select--list" multiple size="4"></select>
                 </fieldset>
               </div>
+
+              <fieldset class="filter-fieldset filter-fieldset--wide fin-supplier-filter">
+                <legend>Fornecedores <span class="legend-hint">(opcional — vazio inclui todos)</span></legend>
+                <div class="filter-fieldset__actions">
+                  <button type="button" class="btn btn--tiny" data-fin-select-all="finSuppliers">Marcar todos</button>
+                  <button type="button" class="btn btn--tiny" data-fin-deselect-all="finSuppliers">Desmarcar todos</button>
+                </div>
+                <select id="finSuppliers" class="select select--list select--list-tall" multiple size="6"></select>
+              </fieldset>
 
               <div class="filter-drawer__footer">
                 <label class="filter-inline">
@@ -412,10 +421,12 @@
             <article class="chart-section chart-section--wide">
               <div class="chart-header">
                 <h2>Ranking de Tipos de Saída</h2>
-                <p class="chart-desc">Somente débitos, agrupados por classificação.</p>
+                <p class="chart-desc">Somente débitos, agrupados por classificação — exibe 5 por vez, role para ver os demais.</p>
               </div>
               <div class="chart-wrap chart-wrap--scroll">
-                <canvas id="finExitTypeChart"></canvas>
+                <div class="chart-wrap__inner" id="finExitTypeChartInner">
+                  <canvas id="finExitTypeChart"></canvas>
+                </div>
               </div>
             </article>
 
@@ -465,7 +476,7 @@
   <script src="js/cashflow-loader.js?v=20260727"></script>
   <script src="js/remote-data.js?v=20260727"></script>
   <script src="js/excel-loader.js?v=20260727"></script>
-  <script src="js/financeiro.js?v=20260727"></script>
-  <script src="js/app.js?v=20260727"></script>
+  <script src="js/financeiro.js?v=20260729"></script>
+  <script src="js/app.js?v=20260728"></script>
 </body>
 </html>
