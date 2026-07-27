@@ -472,7 +472,30 @@ body {
   overflow-x: auto;
 }
 
-.user-ranking-section .table-wrap {
+.kpi-value--positive {
+  color: #22c55e;
+}
+
+.kpi-value--negative {
+  color: #ef4444;
+}
+
+.filter-grid--single {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.chart-wrap--scroll {
+  max-height: 280px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.35);
+  padding: 8px 8px 0;
+}
+
+.user-ranking-section .table-wrap,
+#viewFinanceiro .user-ranking-section .table-wrap {
   max-height: 280px;
   overflow-y: auto;
   border: 1px solid var(--border);
@@ -830,7 +853,8 @@ body {
     align-items: stretch;
   }
 
-  .filter-grid {
+  .filter-grid,
+  .filter-grid--single {
     grid-template-columns: 1fr;
   }
 

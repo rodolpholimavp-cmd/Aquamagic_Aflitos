@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Aquamagic Aflitos — Dashboard</title>
-  <link rel="stylesheet" href="css/styles.css?v=20260726">
+  <link rel="stylesheet" href="css/styles.css?v=20260727">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -310,32 +310,162 @@
         </div>
 
         <div class="view-panel is-hidden" id="viewFinanceiro">
-          <section class="section-intro">
-            <h2>Financeiro</h2>
-            <p>Movimentações financeiras da lavanderia. Em breve você verá aqui gráficos e indicadores desta área.</p>
+          <div class="filter-row">
+            <section class="filter-bar" id="finFilterBar">
+              <div class="filter-bar__content">
+                <span class="filter-bar__label">Período</span>
+                <p class="filter-bar__summary" id="finFilterSummary">Nenhum dado carregado</p>
+                <p class="data-source" id="finDataSourceLabel">Nenhuma planilha de fluxo de caixa carregada</p>
+              </div>
+              <button type="button" class="btn btn--ghost btn--filter" id="finToggleFilterBtn" aria-expanded="false">
+                Alterar período
+              </button>
+            </section>
+          </div>
+
+          <section class="filter-drawer is-hidden" id="finFilterDrawer" aria-hidden="true">
+            <div class="filter-drawer__inner">
+              <div class="filter-drawer__header">
+                <h2>Filtros de período — Financeiro</h2>
+                <p>Clique nas listas para marcar ou desmarcar. Use <strong>Marcar todos</strong> ou <strong>Desmarcar todos</strong>. Deixe <strong>Dias</strong> vazio para incluir todos.</p>
+              </div>
+
+              <div class="filter-grid filter-grid--single">
+                <fieldset class="filter-fieldset">
+                  <legend>Período — Anos</legend>
+                  <div class="filter-fieldset__actions">
+                    <button type="button" class="btn btn--tiny" data-fin-select-all="finPrimaryYears">Marcar todos</button>
+                    <button type="button" class="btn btn--tiny" data-fin-deselect-all="finPrimaryYears">Desmarcar todos</button>
+                  </div>
+                  <select id="finPrimaryYears" class="select select--list" multiple size="2"></select>
+                </fieldset>
+
+                <fieldset class="filter-fieldset">
+                  <legend>Período — Meses</legend>
+                  <div class="filter-fieldset__actions">
+                    <button type="button" class="btn btn--tiny" data-fin-select-all="finPrimaryMonths">Marcar todos</button>
+                    <button type="button" class="btn btn--tiny" data-fin-deselect-all="finPrimaryMonths">Desmarcar todos</button>
+                  </div>
+                  <select id="finPrimaryMonths" class="select select--list" multiple size="4"></select>
+                </fieldset>
+
+                <fieldset class="filter-fieldset">
+                  <legend>Período — Dias <span class="legend-hint">(opcional)</span></legend>
+                  <div class="filter-fieldset__actions">
+                    <button type="button" class="btn btn--tiny" data-fin-select-all="finPrimaryDays">Marcar todos</button>
+                    <button type="button" class="btn btn--tiny" data-fin-deselect-all="finPrimaryDays">Desmarcar todos</button>
+                  </div>
+                  <select id="finPrimaryDays" class="select select--list" multiple size="4"></select>
+                </fieldset>
+              </div>
+
+              <div class="filter-drawer__footer">
+                <label class="filter-inline">
+                  <span>Agrupar gráfico por</span>
+                  <select id="finGroupBySelect" class="select select--compact">
+                    <option value="year">Ano</option>
+                    <option value="month" selected>Mês</option>
+                    <option value="day">Dia</option>
+                  </select>
+                </label>
+
+                <div class="filter-drawer__actions">
+                  <button type="button" class="btn btn--primary" id="finApplyFilters">Aplicar</button>
+                  <button type="button" class="btn btn--ghost" id="finCancelFilters">Cancelar</button>
+                  <button type="button" class="btn btn--ghost" id="finResetFilters">Restaurar padrão</button>
+                </div>
+              </div>
+            </div>
           </section>
 
-          <section class="financeiro-placeholder">
-            <div class="financeiro-placeholder__card">
-              <svg class="financeiro-placeholder__icon" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              <h3>Área em construção</h3>
-              <p>Na próxima etapa vamos adicionar os gráficos e informações financeiras.</p>
+          <section class="kpi-grid">
+            <article class="kpi-card">
+              <span class="kpi-label">Entradas de Caixa</span>
+              <strong class="kpi-value kpi-value--positive" id="finKpiCredits">R$ 0,00</strong>
+              <span class="kpi-hint">créditos no período</span>
+            </article>
+            <article class="kpi-card">
+              <span class="kpi-label">Saídas de Caixa</span>
+              <strong class="kpi-value kpi-value--negative" id="finKpiDebits">R$ 0,00</strong>
+              <span class="kpi-hint">débitos no período</span>
+            </article>
+            <article class="kpi-card">
+              <span class="kpi-label">Saldo do Período</span>
+              <strong class="kpi-value" id="finKpiBalance">R$ 0,00</strong>
+              <span class="kpi-hint">entradas menos saídas</span>
+            </article>
+          </section>
+
+          <section class="chart-section chart-section--wide">
+            <div class="chart-header">
+              <div>
+                <h2>Entradas, Saídas e Saldo</h2>
+                <p class="chart-desc" id="finChartDesc">Carregue a planilha de fluxo de caixa para visualizar.</p>
+              </div>
             </div>
+            <div class="chart-wrap chart-wrap--tall">
+              <canvas id="finCashFlowChart"></canvas>
+            </div>
+          </section>
+
+          <section class="charts-grid">
+            <article class="chart-section chart-section--wide">
+              <div class="chart-header">
+                <h2>Ranking de Tipos de Saída</h2>
+                <p class="chart-desc">Somente débitos, agrupados por classificação.</p>
+              </div>
+              <div class="chart-wrap chart-wrap--scroll">
+                <canvas id="finExitTypeChart"></canvas>
+              </div>
+            </article>
+
+            <article class="chart-section chart-section--wide user-ranking-section">
+              <div class="chart-header chart-header--table">
+                <div>
+                  <h2>Ranking de Fornecedores</h2>
+                  <p class="chart-desc">Maiores saídas por destinatário — exibe 5 por vez, role para ver os demais.</p>
+                </div>
+                <div class="table-sort fin-table-sort" role="group" aria-label="Ordenar ranking de fornecedores">
+                  <button type="button" class="btn btn--tiny fin-table-sort__btn is-active" id="finSortSuppliersByValue" data-sort="value">
+                    Por valor
+                  </button>
+                  <button type="button" class="btn btn--tiny fin-table-sort__btn" id="finSortSuppliersByName" data-sort="name">
+                    Por nome A–Z
+                  </button>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table class="data-table" id="finSupplierRankingTable">
+                  <thead>
+                    <tr>
+                      <th scope="col">#</th>
+                      <th scope="col">Fornecedor</th>
+                      <th scope="col" class="data-table__number">Valor</th>
+                    </tr>
+                  </thead>
+                  <tbody id="finSupplierRankingBody">
+                    <tr>
+                      <td colspan="3" class="data-table__empty">Carregue a planilha de fluxo de caixa para ver o ranking.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </article>
           </section>
         </div>
       </div>
     </main>
   </div>
 
-  <script src="js/config.js?v=20260726"></script>
-  <script src="js/cycle-type.js?v=20260726"></script>
-  <script src="js/machine-normalizer.js?v=20260726"></script>
-  <script src="js/data.js?v=20260726"></script>
-  <script src="js/shifts.js?v=20260726"></script>
-  <script src="js/remote-data.js?v=20260726"></script>
-  <script src="js/excel-loader.js?v=20260726"></script>
-  <script src="js/app.js?v=20260726"></script>
+  <script src="js/config.js?v=20260727"></script>
+  <script src="js/cycle-type.js?v=20260727"></script>
+  <script src="js/machine-normalizer.js?v=20260727"></script>
+  <script src="js/data.js?v=20260727"></script>
+  <script src="js/shifts.js?v=20260727"></script>
+  <script src="js/cashflow-loader.js?v=20260727"></script>
+  <script src="js/remote-data.js?v=20260727"></script>
+  <script src="js/excel-loader.js?v=20260727"></script>
+  <script src="js/financeiro.js?v=20260727"></script>
+  <script src="js/app.js?v=20260727"></script>
 </body>
 </html>

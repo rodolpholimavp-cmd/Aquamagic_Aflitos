@@ -145,6 +145,10 @@
       window.requestAnimationFrame(resizeActiveCharts);
     }
 
+    if (view === "financeiro" && window.LavanderiaFinanceiro) {
+      window.requestAnimationFrame(() => window.LavanderiaFinanceiro.resizeCharts());
+    }
+
     if (isMobileLayout()) {
       setSidebarMobileOpen(false);
     }
@@ -770,8 +774,8 @@
   }
 
   function handlePublishData() {
-    if (window.LAVANDERIA_DATA.transactions.length === 0) {
-      alert("Carregue a planilha Excel antes de publicar na web.");
+    if (window.LAVANDERIA_DATA.transactions.length === 0 && window.LAVANDERIA_DATA.cashFlow.length === 0) {
+      alert("Carregue pelo menos uma planilha Excel antes de publicar na web.");
       return;
     }
 
@@ -1260,36 +1264,84 @@
   configureViewMode();
   initSidebar();
   setActiveView("operacional");
+  if (window.LavanderiaFinanceiro) {
+    window.LavanderiaFinanceiro.init();
+  }
 
   async function bootstrapData() {
     if (window.LAVANDERIA_CONFIG && window.LAVANDERIA_CONFIG.readOnly) {
       const remoteData = await window.LavanderiaRemote.loadRemoteData();
       if (remoteData) {
-        const totalRevenue = remoteData.transactions.reduce((sum, item) => sum + item.amount, 0);
-        applyLoadedData({
-          fileName: remoteData.sourceFile || "Dados publicados",
-          count: remoteData.transactions.length,
-          totalRevenue,
-          fromRemote: true,
-        });
+        const hasTransactions = remoteData.transactions && remoteData.transactions.length > 0;
+        const hasCashFlow = remoteData.cashFlow && remoteData.cashFlow.length > 0;
+
+        if (hasTransactions) {
+          const totalRevenue = remoteData.transactions.reduce((sum, item) => sum + item.amount, 0);
+          applyLoadedData({
+            fileName: remoteData.sourceFile || "Dados publicados",
+            count: remoteData.transactions.length,
+            totalRevenue,
+            fromRemote: true,
+          });
+        } else {
+          showEmptyDashboard();
+        }
+
+        if (hasCashFlow && window.LavanderiaFinanceiro) {
+          const balance = remoteData.cashFlow.reduce((sum, item) => sum + item.amount, 0);
+          window.LavanderiaFinanceiro.applyLoadedData({
+            fileName: remoteData.cashFlowSourceFile || "Fluxo de caixa publicado",
+            count: remoteData.cashFlow.length,
+            balance,
+            fromRemote: true,
+          });
+        } else if (window.LavanderiaFinanceiro) {
+          window.LavanderiaFinanceiro.showEmptyFinanceiro("Os dados financeiros ainda não foram publicados.");
+        }
+
         return;
       }
 
       showEmptyDashboard();
+      if (window.LavanderiaFinanceiro) {
+        window.LavanderiaFinanceiro.showEmptyFinanceiro();
+      }
       return;
     }
 
     const cachedData = window.LAVANDERIA_DATA.loadFromStorage();
     if (cachedData) {
-      const totalRevenue = window.LAVANDERIA_DATA.transactions.reduce((sum, item) => sum + item.amount, 0);
-      applyLoadedData({
-        fileName: cachedData.sourceFile || "Planilha salva",
-        count: cachedData.transactions.length,
-        totalRevenue,
-        fromCache: true,
-      });
+      const hasTransactions = window.LAVANDERIA_DATA.transactions.length > 0;
+      const hasCashFlow = window.LAVANDERIA_DATA.cashFlow.length > 0;
+
+      if (hasTransactions) {
+        const totalRevenue = window.LAVANDERIA_DATA.transactions.reduce((sum, item) => sum + item.amount, 0);
+        applyLoadedData({
+          fileName: cachedData.sourceFile || "Planilha salva",
+          count: cachedData.transactions.length,
+          totalRevenue,
+          fromCache: true,
+        });
+      } else {
+        showEmptyDashboard();
+      }
+
+      if (hasCashFlow && window.LavanderiaFinanceiro) {
+        const balance = window.LAVANDERIA_DATA.cashFlow.reduce((sum, item) => sum + item.amount, 0);
+        window.LavanderiaFinanceiro.applyLoadedData({
+          fileName: cachedData.cashFlowSourceFile || "Fluxo de caixa salvo",
+          count: window.LAVANDERIA_DATA.cashFlow.length,
+          balance,
+          fromCache: true,
+        });
+      } else if (window.LavanderiaFinanceiro) {
+        window.LavanderiaFinanceiro.showEmptyFinanceiro();
+      }
     } else {
       showEmptyDashboard();
+      if (window.LavanderiaFinanceiro) {
+        window.LavanderiaFinanceiro.showEmptyFinanceiro();
+      }
     }
   }
 

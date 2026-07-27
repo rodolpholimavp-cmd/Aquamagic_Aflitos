@@ -10,14 +10,26 @@
       if (!response.ok) return null;
 
       const parsed = await response.json();
-      if (!Array.isArray(parsed.transactions) || parsed.transactions.length === 0) {
+      const hasTransactions = Array.isArray(parsed.transactions) && parsed.transactions.length > 0;
+      const hasCashFlow = Array.isArray(parsed.cashFlow) && parsed.cashFlow.length > 0;
+
+      if (!hasTransactions && !hasCashFlow) {
         return null;
       }
 
-      window.LAVANDERIA_DATA.setFromTransactions(parsed.transactions, parsed.sourceFile || "Dados publicados", {
-        loadedAt: parsed.loadedAt,
-        skipSave: true,
-      });
+      if (hasTransactions) {
+        window.LAVANDERIA_DATA.setFromTransactions(parsed.transactions, parsed.sourceFile || "Dados publicados", {
+          loadedAt: parsed.loadedAt,
+          skipSave: true,
+        });
+      }
+
+      if (hasCashFlow) {
+        window.LAVANDERIA_DATA.setFromCashFlow(parsed.cashFlow, parsed.cashFlowSourceFile || "Fluxo de caixa publicado", {
+          loadedAt: parsed.cashFlowLoadedAt,
+          skipSave: true,
+        });
+      }
 
       return parsed;
     } catch (error) {
@@ -29,8 +41,11 @@
   function buildPublishedPayload() {
     return {
       sourceFile: window.LAVANDERIA_DATA.sourceFile,
+      cashFlowSourceFile: window.LAVANDERIA_DATA.cashFlowSourceFile,
       loadedAt: new Date().toISOString(),
+      cashFlowLoadedAt: window.LAVANDERIA_DATA.cashFlowLoadedAt || new Date().toISOString(),
       transactions: window.LAVANDERIA_DATA.transactions,
+      cashFlow: window.LAVANDERIA_DATA.cashFlow,
     };
   }
 

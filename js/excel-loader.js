@@ -294,6 +294,40 @@
 
     const buffer = await file.arrayBuffer();
     const workbook = window.XLSX.read(buffer, { type: "array", cellDates: true });
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    const rows = window.XLSX.utils.sheet_to_json(sheet, { defval: "" });
+
+    if (rows.length === 0) {
+      throw new Error("A planilha está vazia.");
+    }
+
+    const fileName = normalizeText(file.name);
+    const looksLikeCashFlow =
+      window.LavanderiaCashFlow &&
+      (window.LavanderiaCashFlow.isCashFlowWorkbook(rows[0]) ||
+        fileName.includes("fluxo") ||
+        fileName.includes("caixa"));
+
+    if (looksLikeCashFlow) {
+      const movements = window.LavanderiaCashFlow.parseWorkbook(workbook);
+      const credits = movements.filter((item) => item.amount > 0).reduce((sum, item) => sum + item.amount, 0);
+      const debits = movements.filter((item) => item.amount < 0).reduce((sum, item) => sum + item.amount, 0);
+      window.LAVANDERIA_DATA.setFromCashFlow(movements, file.name);
+      window.dispatchEvent(
+        new CustomEvent("lavanderia:cashflow-loaded", {
+          detail: {
+            fileName: file.name,
+            count: movements.length,
+            totalCredits: credits,
+            totalDebits: debits,
+            balance: credits + debits,
+          },
+        }),
+      );
+      return;
+    }
+
     const transactions = parseWorkbook(workbook);
     const totalRevenue = transactions.reduce((sum, item) => sum + item.amount, 0);
 
