@@ -214,6 +214,31 @@
       .replace(/"/g, "&quot;");
   }
 
+  function normalizeText(value) {
+    return String(value || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+  }
+
+  function filterSupplierOptions(query) {
+    const select = document.getElementById("finSuppliers");
+    if (!select) return;
+
+    const term = normalizeText(query);
+    [...select.options].forEach((option) => {
+      option.hidden = term ? !normalizeText(option.textContent).includes(term) : false;
+    });
+  }
+
+  function clearSupplierSearch() {
+    const search = document.getElementById("finSupplierSearch");
+    if (!search) return;
+    search.value = "";
+    filterSupplierOptions("");
+  }
+
   function getSelectedValues(select, parser) {
     return [...select.selectedOptions].map((option) => parser(option.value));
   }
@@ -251,13 +276,16 @@
 
     const supplierSelect = document.getElementById("finSuppliers");
     if (supplierSelect) {
+      const selected = new Set(state.suppliers);
       supplierSelect.innerHTML = "";
       deriveSuppliersFromData().forEach((name) => {
         const option = document.createElement("option");
         option.value = name;
         option.textContent = name;
+        option.selected = selected.has(name);
         supplierSelect.appendChild(option);
       });
+      filterSupplierOptions(document.getElementById("finSupplierSearch")?.value || "");
     }
   }
 
@@ -305,18 +333,21 @@
     document.getElementById("finFilterDrawer").classList.toggle("is-hidden", !isOpen);
     document.getElementById("finFilterDrawer").setAttribute("aria-hidden", String(!isOpen));
     document.getElementById("finToggleFilterBtn").setAttribute("aria-expanded", String(isOpen));
-    document.getElementById("finToggleFilterBtn").textContent = isOpen ? "Fechar" : "Alterar período";
+    document.getElementById("finToggleFilterBtn").textContent = isOpen ? "Fechar" : "Filtros";
     if (isOpen) syncSelectsFromState();
+    clearSupplierSearch();
   }
 
   function selectAllInSelect(selectId) {
     [...document.getElementById(selectId).options].forEach((option) => {
+      if (selectId === "finSuppliers" && option.hidden) return;
       option.selected = true;
     });
   }
 
   function deselectAllInSelect(selectId) {
     [...document.getElementById(selectId).options].forEach((option) => {
+      if (selectId === "finSuppliers" && option.hidden) return;
       option.selected = false;
     });
   }
@@ -731,6 +762,10 @@
 
     document.getElementById("finGroupBySelect").addEventListener("change", (event) => {
       state.groupBy = event.target.value;
+    });
+
+    document.getElementById("finSupplierSearch").addEventListener("input", (event) => {
+      filterSupplierOptions(event.target.value);
     });
 
     document.getElementById("finSortSuppliersByValue").addEventListener("click", () => {

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Aquamagic Aflitos — Dashboard</title>
-  <link rel="stylesheet" href="css/styles.css?v=20260729">
+  <link rel="stylesheet" href="css/styles.css?v=20260730">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -313,12 +313,12 @@
           <div class="filter-row">
             <section class="filter-bar" id="finFilterBar">
               <div class="filter-bar__content">
-                <span class="filter-bar__label">Período</span>
+                <span class="filter-bar__label">Filtros</span>
                 <p class="filter-bar__summary" id="finFilterSummary">Nenhum dado carregado</p>
                 <p class="data-source" id="finDataSourceLabel">Nenhuma planilha de fluxo de caixa carregada</p>
               </div>
               <button type="button" class="btn btn--ghost btn--filter" id="finToggleFilterBtn" aria-expanded="false">
-                Alterar período
+                Filtros
               </button>
             </section>
           </div>
@@ -326,7 +326,7 @@
           <section class="filter-drawer is-hidden" id="finFilterDrawer" aria-hidden="true">
             <div class="filter-drawer__inner">
               <div class="filter-drawer__header">
-                <h2>Filtros de período — Financeiro</h2>
+                <h2>Filtros — Financeiro</h2>
                 <p>Clique nas listas para marcar ou desmarcar. Use <strong>Marcar todos</strong> ou <strong>Desmarcar todos</strong>. Deixe <strong>Dias</strong> e <strong>Fornecedores</strong> vazios para incluir todos.</p>
               </div>
 
@@ -365,6 +365,13 @@
                   <button type="button" class="btn btn--tiny" data-fin-select-all="finSuppliers">Marcar todos</button>
                   <button type="button" class="btn btn--tiny" data-fin-deselect-all="finSuppliers">Desmarcar todos</button>
                 </div>
+                <input
+                  type="search"
+                  id="finSupplierSearch"
+                  class="select filter-search"
+                  placeholder="Pesquisar fornecedor..."
+                  autocomplete="off"
+                >
                 <select id="finSuppliers" class="select select--list select--list-tall" multiple size="6"></select>
               </fieldset>
 
@@ -476,7 +483,7 @@
   <script src="js/cashflow-loader.js?v=20260727"></script>
   <script src="js/remote-data.js?v=20260727"></script>
   <script src="js/excel-loader.js?v=20260727"></script>
-  <script src="js/financeiro.js?v=20260729"></script>
+  <script src="js/financeiro.js?v=20260730"></script>
   <script src="js/app.js?v=20260728"></script>
 </body>
 </html>
